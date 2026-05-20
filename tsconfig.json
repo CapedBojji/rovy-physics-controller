@@ -14,12 +14,18 @@
     "moduleDetection": "force",
     "strict": true,
     "target": "ESNext",
-    "typeRoots": ["node_modules/@rbxts"],
+    "typeRoots": ["node_modules/@rbxts", "node_modules/@rovy"],
     "rootDir": "src",
     "outDir": "out",
     "incremental": true,
     "tsBuildInfoFile": "out/tsconfig.tsbuildinfo",
-    "declaration": true
+    "declaration": true,
+    "plugins": [
+      {
+        "transform": "rovy-transformer",
+        "config": ".rovy.json"
+      }
+    ]
   },
   "include": ["src"],
   "exclude": ["node_modules", "out"]

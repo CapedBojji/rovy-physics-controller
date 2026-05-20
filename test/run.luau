@@ -2,4 +2,4 @@
 -- Run with: zune test test/run
 -- (build first: rbxtsc)
 
-require("./specs/spec_01_controller")
+require("./harness/spec_runner").run()

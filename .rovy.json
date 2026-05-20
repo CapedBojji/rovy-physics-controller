@@ -1,0 +1,12 @@
+{
+	"$schema": "../rovy/packages/core/schema/rovy.schema.json",
+	"current": "dev",
+	"environments": {
+		"dev": {
+			"rojo": "default.project.json",
+			"boundaries": {
+				"shared": ["src"]
+			}
+		}
+	}
+}

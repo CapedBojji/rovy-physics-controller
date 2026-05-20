@@ -4,8 +4,20 @@
 		"$className": "DataModel",
 		"ServerScriptService": {
 			"$className": "ServerScriptService",
-			"TestRunner": {
-				"$path": "test/integration/runner.server.luau"
+			"controller.spec": {
+				"$path": "test/integration/controller.spec.luau"
+			},
+			"playtest.server": {
+				"$path": "test/play-session/server.server.luau"
+			}
+		},
+		"StarterPlayer": {
+			"$className": "StarterPlayer",
+			"StarterPlayerScripts": {
+				"$className": "StarterPlayerScripts",
+				"playtest.client": {
+					"$path": "test/play-session/client.client.luau"
+				}
 			}
 		},
 		"ReplicatedStorage": {
@@ -16,6 +28,9 @@
 					"$className": "Folder",
 					"@rbxts": {
 						"$path": "node_modules/@rbxts"
+					},
+					"@rovy": {
+						"$path": "node_modules/@rovy"
 					}
 				}
 			},
