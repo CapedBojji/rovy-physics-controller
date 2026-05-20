@@ -1,0 +1,9 @@
+{
+  "name": "physics-controller",
+  "tree": {
+    "$className": "Folder",
+    "out": {
+      "$path": "out"
+    }
+  }
+}
