@@ -1,13 +1,23 @@
---!nocheck
--- controller: placeholder spec — fill in as the physics controller is implemented.
+-- PhysicsController specs.
+-- Uses Zune's native testing API (zune.testing).
 
-return function(TS, t)
-	local lib = TS.loadPath("out/init")
+local testing = zune.testing
+local describe = testing.describe
+local test = testing.test
+local expect = testing.expect
 
-	t.describe("PhysicsController", function()
-		t.it("can be constructed", function()
-			local controller = lib.PhysicsController.new()
-			t.expect(controller).toBeDefined()
-		end)
+-- The compiled roblox-ts output lives at out/init.luau after `rbxtsc`.
+-- Require it from the project root (zune test is run from the repo root).
+local lib = require("./out/init")
+
+describe("PhysicsController", function()
+	test("can be constructed with no arguments", function()
+		local controller = lib.PhysicsController.new()
+		expect(controller).toBeDefined()
 	end)
-end
+
+	test("can be constructed with options", function()
+		local controller = lib.PhysicsController.new({})
+		expect(controller).toBeDefined()
+	end)
+end)

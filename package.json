@@ -8,7 +8,7 @@
   "scripts": {
     "build": "rbxtsc",
     "dev": "rbxtsc -w",
-    "test": "npm run build && zune test test/run"
+    "test": "rbxtsc && zune test test/run"
   },
   "files": [
     "out",

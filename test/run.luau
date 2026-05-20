@@ -1,14 +1,5 @@
---!nocheck
--- rovy-physics-controller spec runner.
--- Builds the package, then runs every test/specs/*.luau against the compiled `out/`.
--- Usage: `pnpm test`  or  `zune test test/run`
+-- rovy-physics-controller test suite entry point.
+-- Run with: zune test test/run
+-- (build first: rbxtsc)
 
-local runner = require("./harness/spec_runner")
-
-runner.run({
-	runtimeModule = "./harness/runtime",
-	loadPath = "out/init",
-	specsDir = "test/specs",
-	specsRequirePrefix = "./specs/",
-	successMessage = "ok  harness loaded out/init",
-})
+require("./specs/spec_01_controller")
