@@ -1,0 +1,27 @@
+{
+	"name": "physics-controller-test",
+	"tree": {
+		"$className": "DataModel",
+		"ServerScriptService": {
+			"$className": "ServerScriptService",
+			"TestRunner": {
+				"$path": "test/integration/runner.server.luau"
+			}
+		},
+		"ReplicatedStorage": {
+			"$className": "ReplicatedStorage",
+			"rbxts_include": {
+				"$path": "include",
+				"node_modules": {
+					"$className": "Folder",
+					"@rbxts": {
+						"$path": "node_modules/@rbxts"
+					}
+				}
+			},
+			"PhysicsController": {
+				"$path": "out"
+			}
+		}
+	}
+}

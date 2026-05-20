@@ -8,7 +8,8 @@
   "scripts": {
     "build": "rbxtsc",
     "dev": "rbxtsc -w",
-    "test": "rbxtsc && zune test test/run"
+    "test": "rbxtsc && zune test test/run",
+    "test:integration": "rbxtsc && rojo build test.project.json -o build/physics-controller-test.rbxl"
   },
   "files": [
     "out",
