@@ -4,8 +4,8 @@
 		"$className": "DataModel",
 		"ServerScriptService": {
 			"$className": "ServerScriptService",
-			"controller.spec": {
-				"$path": "test/integration/controller.spec.luau"
+			"controller": {
+				"$path": "test/integration"
 			},
 			"playtest.server": {
 				"$path": "test/play-session/server.server.luau"
@@ -30,7 +30,10 @@
 						"$path": "node_modules/@rbxts"
 					},
 					"@rovy": {
-						"$path": "node_modules/@rovy"
+						"$className": "Folder",
+						"core": {
+							"$path": "../rovy/packages/core"
+						}
 					}
 				}
 			},

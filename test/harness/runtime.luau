@@ -141,6 +141,22 @@ end
 
 local rootNode = ensureRoot(ROOT)
 local outNode = ensureRoot(ROOT .. "/out")
+local localRovyPackagesNode = ensureRoot(ROOT .. "/../rovy/packages")
+
+if rootNode.children["node_modules"] == nil then
+	rootNode.children["node_modules"] = newNode(ROOT .. "/node_modules")
+end
+
+local nodeModulesNode = rootNode.children["node_modules"]
+if nodeModulesNode.children["@rovy"] == nil then
+	nodeModulesNode.children["@rovy"] = newNode(ROOT .. "/node_modules/@rovy")
+end
+
+local rovyScopeNode = nodeModulesNode.children["@rovy"]
+if localRovyPackagesNode.children["core"] ~= nil then
+	rovyScopeNode.children["core"] = localRovyPackagesNode.children["core"]
+end
+
 local includeNode = rootNode.children["rbxts_include"]
 if includeNode ~= nil and includeNode.children["node_modules"] == nil and rootNode.children["node_modules"] ~= nil then
 	includeNode.children["node_modules"] = rootNode.children["node_modules"]

@@ -44,6 +44,35 @@ local function readJumpPower(rootPart: BasePart): number?
 	return nil
 end
 
+local function readNumberValue(rootPart: BasePart, name: string, fallback: number): number
+	local value = rootPart:FindFirstChild(name)
+	if value ~= nil and value:IsA("NumberValue") then
+		return value.Value
+	end
+	return fallback
+end
+
+local function resetControllerState(app, entity, input, airStrafeIntent, rootPart)
+	input.moveDirection = Vector3.zero
+	input.facingDirection = flattenOrFallback(camera.CFrame.LookVector, Vector3.zAxis * -1)
+	airStrafeIntent.direction = Vector3.zero
+	airStrafeIntent.strength = 0
+	rootPart.AssemblyLinearVelocity = Vector3.zero
+	rootPart.AssemblyAngularVelocity = Vector3.zero
+
+	local store = app.world:resource(pkg.PhysicsRuntimeStore)
+	local runtime = store.entries[entity]
+	if runtime ~= nil then
+		runtime.carryVelocity = Vector3.zero
+		runtime.lastMoveDirection = Vector3.zero
+		runtime.lastFacingDirection = input.facingDirection
+		runtime.lastAppliedImpulse = Vector3.zero
+		runtime.lastJumpImpulse = Vector3.zero
+		runtime.airborneSinceLastBounce = true
+		runtime.wasGroundedLastFrame = false
+	end
+end
+
 local function buildMoveDirection(): Vector3
 	local moveX = 0
 	local moveZ = 0
@@ -84,9 +113,28 @@ pkg.configurePhysicsController(app)
 app:start()
 
 local input = pkg.PhysicsInput.new()
+local airStrafeIntent = pkg.AirStrafeIntent.new()
+local config = pkg.PhysicsControllerConfig.new(22, {
+	enabled = true,
+	acceleration = 240,
+	maxHorizontalSpeed = 120,
+	fallSlowdown = {
+		enabled = true,
+		dragAcceleration = 180,
+	},
+}, {
+	enabled = true,
+	groundBounceStrength = 18,
+	carryRetentionPerBounce = 0.92,
+	bigJumpCarryScale = 0.45,
+	maxCarrySpeed = 140,
+	carrySteerFactor = 0.18,
+	minCarryBounceThreshold = 1,
+})
 local entity = app.world:spawn(
-	pkg.PhysicsControllerConfig.new(22),
+	config,
 	input,
+	airStrafeIntent,
 	pkg.PhysicsBody.new(rootPart)
 )
 
@@ -111,6 +159,17 @@ RunService.RenderStepped:Connect(function()
 
 	input.moveDirection = moveDirection
 	input.facingDirection = if moveDirection.Magnitude > 1e-4 then moveDirection else lookFallback
+	config.airStrafe.acceleration = readNumberValue(rootPart, "AirStrafeAcceleration", 240)
+	config.airStrafe.maxHorizontalSpeed = readNumberValue(rootPart, "AirStrafeMaxHorizontalSpeed", 120)
+	config.airStrafe.fallSlowdown.dragAcceleration = readNumberValue(rootPart, "AirFallDragAcceleration", 180)
+	config.bounce.groundBounceStrength = readNumberValue(rootPart, "GroundBounceStrength", 18)
+	config.bounce.carryRetentionPerBounce = readNumberValue(rootPart, "CarryRetentionPerBounce", 0.92)
+	config.bounce.bigJumpCarryScale = readNumberValue(rootPart, "BigJumpCarryScale", 0.45)
+	config.bounce.maxCarrySpeed = readNumberValue(rootPart, "MaxCarrySpeed", 140)
+	config.bounce.carrySteerFactor = readNumberValue(rootPart, "CarrySteerFactor", 0.18)
+	config.bounce.minCarryBounceThreshold = readNumberValue(rootPart, "MinCarryBounceThreshold", 1)
+	airStrafeIntent.direction = moveDirection
+	airStrafeIntent.strength = if moveDirection.Magnitude > 1e-4 then 1 else 0
 
 	if jumpQueued then
 		app.commands:send(pkg.JumpEvent.new(entity, readJumpPower(rootPart)))
@@ -122,6 +181,8 @@ RunService.RenderStepped:Connect(function()
 	end
 
 	if respawnQueued then
+		resetControllerState(app, entity, input, airStrafeIntent, rootPart)
+		jumpQueued = false
 		respawnEvent:FireServer()
 		respawnQueued = false
 	end

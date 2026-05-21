@@ -4,11 +4,22 @@ local Workspace = game:GetService("Workspace")
 
 local PLAYTEST_FOLDER_NAME = "PhysicsControllerPlaytest"
 local PLAYER_CUBES_FOLDER_NAME = "PlayerCubes"
+local PLATFORM_FOLDER_NAME = "Platforms"
 local CUBE_ATTRIBUTE_NAME = "PhysicsControllerCubeName"
-local DEFAULT_JUMP_POWER = 32
+local DEFAULT_JUMP_POWER = 320
+local DEFAULT_AIR_STRAFE_ACCELERATION = 240
+local DEFAULT_AIR_STRAFE_MAX_HORIZONTAL_SPEED = 120
+local DEFAULT_AIR_FALL_DRAG_ACCELERATION = 180
+local DEFAULT_GROUND_BOUNCE_STRENGTH = 18
+local DEFAULT_CARRY_RETENTION_PER_BOUNCE = 0.92
+local DEFAULT_BIG_JUMP_CARRY_SCALE = 0.45
+local DEFAULT_MAX_CARRY_SPEED = 140
+local DEFAULT_CARRY_STEER_FACTOR = 0.18
+local DEFAULT_MIN_CARRY_BOUNCE_THRESHOLD = 1
 local PLATFORM_COLOR = Color3.fromRGB(75, 75, 75)
 local REMOTE_FOLDER_NAME = "PhysicsControllerPlaytestRemotes"
 local RESPAWN_EVENT_NAME = "RespawnCube"
+local PLAYTEST_ORIGIN = Vector3.new(1000, 0, 1000)
 
 local function ensurePlatform(
 	parent: Instance,
@@ -38,6 +49,16 @@ local function ensurePlatform(
 	return part
 end
 
+local function clearChildren(parent: Instance)
+	for _, child in ipairs(parent:GetChildren()) do
+		child:Destroy()
+	end
+end
+
+local function atOrigin(offset: Vector3): Vector3
+	return PLAYTEST_ORIGIN + offset
+end
+
 Players.CharacterAutoLoads = false
 
 local rootFolder = Workspace:FindFirstChild(PLAYTEST_FOLDER_NAME)
@@ -54,6 +75,13 @@ if cubesFolder == nil then
 	cubesFolder.Parent = rootFolder
 end
 
+local platformsFolder = rootFolder:FindFirstChild(PLATFORM_FOLDER_NAME)
+if platformsFolder == nil then
+	platformsFolder = Instance.new("Folder")
+	platformsFolder.Name = PLATFORM_FOLDER_NAME
+	platformsFolder.Parent = rootFolder
+end
+
 local remotesFolder = ReplicatedStorage:FindFirstChild(REMOTE_FOLDER_NAME)
 if remotesFolder == nil then
 	remotesFolder = Instance.new("Folder")
@@ -68,16 +96,19 @@ if respawnEvent == nil then
 	respawnEvent.Parent = remotesFolder
 end
 
-ensurePlatform(rootFolder, "StartPlatform", Vector3.new(32, 1, 32), Vector3.new(0, 0, 0))
-ensurePlatform(rootFolder, "GapRunA", Vector3.new(18, 1, 18), Vector3.new(28, 0, 0))
-ensurePlatform(rootFolder, "GapRunB", Vector3.new(18, 1, 18), Vector3.new(52, 0, 0))
-ensurePlatform(rootFolder, "RaisedStepA", Vector3.new(16, 1, 16), Vector3.new(74, 3, 0), Color3.fromRGB(100, 100, 100))
-ensurePlatform(rootFolder, "RaisedStepB", Vector3.new(16, 1, 16), Vector3.new(94, 6, 0), Color3.fromRGB(120, 120, 120))
-ensurePlatform(rootFolder, "MomentumLanding", Vector3.new(24, 1, 24), Vector3.new(122, 6, 0), Color3.fromRGB(90, 110, 90))
-ensurePlatform(rootFolder, "LateralGapLeft", Vector3.new(14, 1, 14), Vector3.new(122, 6, -22), Color3.fromRGB(110, 90, 90))
-ensurePlatform(rootFolder, "LateralGapRight", Vector3.new(14, 1, 14), Vector3.new(122, 6, 22), Color3.fromRGB(90, 90, 110))
-ensurePlatform(rootFolder, "HighPerch", Vector3.new(12, 1, 12), Vector3.new(150, 10, 0), Color3.fromRGB(130, 130, 130))
-ensurePlatform(rootFolder, "DropCatch", Vector3.new(18, 1, 18), Vector3.new(176, 4, 0), Color3.fromRGB(80, 100, 120))
+clearChildren(platformsFolder)
+
+ensurePlatform(platformsFolder, "Baseplate", Vector3.new(512, 1, 512), atOrigin(Vector3.new(0, 0, 0)))
+ensurePlatform(platformsFolder, "CenterPad", Vector3.new(24, 1, 24), atOrigin(Vector3.new(0, 4, 0)), Color3.fromRGB(95, 95, 95))
+ensurePlatform(platformsFolder, "NorthPad", Vector3.new(10, 1, 10), atOrigin(Vector3.new(0, 8, -22)), Color3.fromRGB(115, 115, 115))
+ensurePlatform(platformsFolder, "SouthPad", Vector3.new(10, 1, 10), atOrigin(Vector3.new(0, 8, 22)), Color3.fromRGB(115, 115, 115))
+ensurePlatform(platformsFolder, "EastPad", Vector3.new(10, 1, 10), atOrigin(Vector3.new(22, 8, 0)), Color3.fromRGB(115, 115, 115))
+ensurePlatform(platformsFolder, "WestPad", Vector3.new(10, 1, 10), atOrigin(Vector3.new(-22, 8, 0)), Color3.fromRGB(115, 115, 115))
+ensurePlatform(platformsFolder, "NorthEastHigh", Vector3.new(8, 1, 8), atOrigin(Vector3.new(18, 13, -18)), Color3.fromRGB(135, 135, 135))
+ensurePlatform(platformsFolder, "NorthWestHigh", Vector3.new(8, 1, 8), atOrigin(Vector3.new(-18, 13, -18)), Color3.fromRGB(135, 135, 135))
+ensurePlatform(platformsFolder, "SouthEastHigh", Vector3.new(8, 1, 8), atOrigin(Vector3.new(18, 13, 18)), Color3.fromRGB(135, 135, 135))
+ensurePlatform(platformsFolder, "SouthWestHigh", Vector3.new(8, 1, 8), atOrigin(Vector3.new(-18, 13, 18)), Color3.fromRGB(135, 135, 135))
+ensurePlatform(platformsFolder, "TopPerch", Vector3.new(12, 1, 12), atOrigin(Vector3.new(0, 19, 0)), Color3.fromRGB(155, 155, 155))
 
 local function destroyCharacter(player: Player)
 	if player.Character ~= nil then
@@ -86,7 +117,7 @@ local function destroyCharacter(player: Player)
 end
 
 local function getSpawnPosition(index: number): Vector3
-	return Vector3.new((index - 1) * 8, 6, 0)
+	return atOrigin(Vector3.new((index - 1) * 8, 6, 0))
 end
 
 local function respawnCubeForPlayer(player: Player)
@@ -125,6 +156,51 @@ local function createCubeForPlayer(player: Player)
 	jumpPowerValue.Name = "JumpPower"
 	jumpPowerValue.Value = DEFAULT_JUMP_POWER
 	jumpPowerValue.Parent = cube
+
+	local airStrafeAccelerationValue = Instance.new("NumberValue")
+	airStrafeAccelerationValue.Name = "AirStrafeAcceleration"
+	airStrafeAccelerationValue.Value = DEFAULT_AIR_STRAFE_ACCELERATION
+	airStrafeAccelerationValue.Parent = cube
+
+	local airStrafeMaxHorizontalSpeedValue = Instance.new("NumberValue")
+	airStrafeMaxHorizontalSpeedValue.Name = "AirStrafeMaxHorizontalSpeed"
+	airStrafeMaxHorizontalSpeedValue.Value = DEFAULT_AIR_STRAFE_MAX_HORIZONTAL_SPEED
+	airStrafeMaxHorizontalSpeedValue.Parent = cube
+
+	local airFallDragAccelerationValue = Instance.new("NumberValue")
+	airFallDragAccelerationValue.Name = "AirFallDragAcceleration"
+	airFallDragAccelerationValue.Value = DEFAULT_AIR_FALL_DRAG_ACCELERATION
+	airFallDragAccelerationValue.Parent = cube
+
+	local groundBounceStrengthValue = Instance.new("NumberValue")
+	groundBounceStrengthValue.Name = "GroundBounceStrength"
+	groundBounceStrengthValue.Value = DEFAULT_GROUND_BOUNCE_STRENGTH
+	groundBounceStrengthValue.Parent = cube
+
+	local carryRetentionPerBounceValue = Instance.new("NumberValue")
+	carryRetentionPerBounceValue.Name = "CarryRetentionPerBounce"
+	carryRetentionPerBounceValue.Value = DEFAULT_CARRY_RETENTION_PER_BOUNCE
+	carryRetentionPerBounceValue.Parent = cube
+
+	local bigJumpCarryScaleValue = Instance.new("NumberValue")
+	bigJumpCarryScaleValue.Name = "BigJumpCarryScale"
+	bigJumpCarryScaleValue.Value = DEFAULT_BIG_JUMP_CARRY_SCALE
+	bigJumpCarryScaleValue.Parent = cube
+
+	local maxCarrySpeedValue = Instance.new("NumberValue")
+	maxCarrySpeedValue.Name = "MaxCarrySpeed"
+	maxCarrySpeedValue.Value = DEFAULT_MAX_CARRY_SPEED
+	maxCarrySpeedValue.Parent = cube
+
+	local carrySteerFactorValue = Instance.new("NumberValue")
+	carrySteerFactorValue.Name = "CarrySteerFactor"
+	carrySteerFactorValue.Value = DEFAULT_CARRY_STEER_FACTOR
+	carrySteerFactorValue.Parent = cube
+
+	local minCarryBounceThresholdValue = Instance.new("NumberValue")
+	minCarryBounceThresholdValue.Name = "MinCarryBounceThreshold"
+	minCarryBounceThresholdValue.Value = DEFAULT_MIN_CARRY_BOUNCE_THRESHOLD
+	minCarryBounceThresholdValue.Parent = cube
 
 	player:SetAttribute(CUBE_ATTRIBUTE_NAME, cube.Name)
 	respawnCubeForPlayer(player)

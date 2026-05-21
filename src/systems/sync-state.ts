@@ -3,8 +3,9 @@ import { PhysicsBody, PhysicsControllerConfig } from "../components";
 import { PhysicsRuntimeStore } from "../resources";
 import { syncGroundedTags } from "../runtime-helpers";
 import { PhysicsControllerUpdate, PhysicsRuntimeEventSet, PhysicsRuntimeStateSet } from "../state";
+import { ApplyGroundBounce } from "./apply-ground-bounce";
 
-@system({ schedule: PhysicsControllerUpdate, set: PhysicsRuntimeStateSet, after: [PhysicsRuntimeEventSet] })
+@system({ schedule: PhysicsControllerUpdate, set: PhysicsRuntimeStateSet, after: [PhysicsRuntimeEventSet, ApplyGroundBounce] })
 export class SyncPhysicsState {
 	run(
 		commands: Commands,

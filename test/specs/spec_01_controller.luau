@@ -12,6 +12,7 @@ return function(TS, t)
 			local controller = components.PhysicsControllerConfig.new()
 			expect(controller).never.toBeUndefined()
 			expect(controller.walkSpeed).toBe(16)
+			expect(controller.bounce.enabled).toBe(true)
 		end)
 
 		test("applies provided walk speed", function()
@@ -20,11 +21,56 @@ return function(TS, t)
 			expect(controller.walkSpeed).toBe(24)
 		end)
 
+		test("accepts optional air strafe config", function()
+			local controller = components.PhysicsControllerConfig.new(24, {
+				enabled = true,
+				acceleration = 80,
+				maxHorizontalSpeed = 32,
+				fallSlowdown = {
+					enabled = true,
+					dragAcceleration = 18,
+				},
+			})
+			expect(controller.airStrafe.enabled).toBe(true)
+			expect(controller.airStrafe.acceleration).toBe(80)
+			expect(controller.airStrafe.maxHorizontalSpeed).toBe(32)
+			expect(controller.airStrafe.fallSlowdown.enabled).toBe(true)
+			expect(controller.airStrafe.fallSlowdown.dragAcceleration).toBe(18)
+		end)
+
+		test("accepts bounce locomotion config", function()
+			local controller = components.PhysicsControllerConfig.new(24, nil, {
+				enabled = true,
+				groundBounceStrength = 14,
+				carryRetentionPerBounce = 0.9,
+				bigJumpCarryScale = 0.4,
+				maxCarrySpeed = 55,
+				carrySteerFactor = 0.3,
+				minCarryBounceThreshold = 1.5,
+			})
+			expect(controller.bounce.enabled).toBe(true)
+			expect(controller.bounce.groundBounceStrength).toBe(14)
+			expect(controller.bounce.carryRetentionPerBounce).toBe(0.9)
+			expect(controller.bounce.bigJumpCarryScale).toBe(0.4)
+			expect(controller.bounce.maxCarrySpeed).toBe(55)
+			expect(controller.bounce.carrySteerFactor).toBe(0.3)
+			expect(controller.bounce.minCarryBounceThreshold).toBe(1.5)
+		end)
+
 		test("constructs input and body-facing components", function()
 			local input = components.PhysicsInput.new()
 			expect(input).never.toBeUndefined()
 			expect(input.facingDirection.Z).toBe(-1)
 			expect(input.moveDirection.X).toBe(0)
+		end)
+
+		test("constructs air strafe intent defaults", function()
+			local intent = components.AirStrafeIntent.new()
+			expect(intent).never.toBeUndefined()
+			expect(intent.direction.X).toBe(0)
+			expect(intent.direction.Y).toBe(0)
+			expect(intent.direction.Z).toBe(0)
+			expect(intent.strength).toBe(1)
 		end)
 
 		test("constructs queued controller events", function()

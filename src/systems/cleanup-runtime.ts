@@ -2,9 +2,9 @@ import { Commands, Entity, Query, ResMut, system } from "@rovy/core";
 import { PhysicsBody, PhysicsControllerConfig } from "../components";
 import { PhysicsRuntimeStore } from "../resources";
 import { cleanupRuntimes, isValidControlledBody } from "../runtime-helpers";
-import { PhysicsControllerUpdate, PhysicsRuntimeCleanupSet, PhysicsRuntimeEventSet } from "../state";
+import { PhysicsControllerUpdate, PhysicsRuntimeCleanupSet, PhysicsRuntimeStateSet } from "../state";
 
-@system({ schedule: PhysicsControllerUpdate, set: PhysicsRuntimeCleanupSet, after: [PhysicsRuntimeEventSet] })
+@system({ schedule: PhysicsControllerUpdate, set: PhysicsRuntimeCleanupSet, after: [PhysicsRuntimeStateSet] })
 export class CleanupPhysicsRuntime {
 	run(
 		commands: Commands,
