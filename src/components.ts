@@ -1,78 +1,77 @@
-import { component } from "@rovy/core";
-import {
-	DEFAULT_BIG_JUMP_CARRY_SCALE,
-	DEFAULT_CARRY_RETENTION_PER_BOUNCE,
-	DEFAULT_CARRY_STEER_FACTOR,
-	DEFAULT_FACING,
-	DEFAULT_GROUND_BOUNCE_STRENGTH,
-	DEFAULT_MAX_CARRY_SPEED,
-	DEFAULT_MIN_CARRY_BOUNCE_THRESHOLD,
-	DEFAULT_WALK_SPEED,
-	ZERO_VECTOR,
-} from "./constants";
+import { type Commands, component, type Entity } from "@rovy/core";
 
-export interface FallSlowdownConfig {
-	enabled: boolean;
-	dragAcceleration: number;
+interface RigidBodyInstances {
+	controller_manager: ControllerManager;
+	ground_controller: GroundController;
+	air_controller: AirController;
+	ground_sensor: ControllerPartSensor;
 }
 
-export interface AirStrafeConfig {
-	enabled: boolean;
-	acceleration: number;
-	maxHorizontalSpeed: number;
-	fallSlowdown?: FallSlowdownConfig;
-}
-
-export interface BounceLocomotionConfig {
-	enabled: boolean;
-	groundBounceStrength: number;
-	carryRetentionPerBounce: number;
-	bigJumpCarryScale: number;
-	maxCarrySpeed: number;
-	carrySteerFactor: number;
-	minCarryBounceThreshold?: number;
+interface RigitBodyDefinition {
+	root_part: BasePart;
+	walk_speed: number;
+	base_turn_speed: number;
+	ground_offset: number;
 }
 
 @component
-export class PhysicsControllerConfig {
+export class RigidBody {
 	constructor(
-		public walkSpeed = DEFAULT_WALK_SPEED,
-		public airStrafe?: AirStrafeConfig,
-		public bounce: BounceLocomotionConfig = {
-			enabled: true,
-			groundBounceStrength: DEFAULT_GROUND_BOUNCE_STRENGTH,
-			carryRetentionPerBounce: DEFAULT_CARRY_RETENTION_PER_BOUNCE,
-			bigJumpCarryScale: DEFAULT_BIG_JUMP_CARRY_SCALE,
-			maxCarrySpeed: DEFAULT_MAX_CARRY_SPEED,
-			carrySteerFactor: DEFAULT_CARRY_STEER_FACTOR,
-			minCarryBounceThreshold: DEFAULT_MIN_CARRY_BOUNCE_THRESHOLD,
-		},
+		public readonly definition: Readonly<RigitBodyDefinition>,
+		public readonly instances?: Readonly<RigidBodyInstances>,
 	) {}
+
+	public destroy(entity: Entity, commands: Commands) {
+		this.instances?.controller_manager.Destroy();
+		this.instances?.ground_controller.Destroy();
+		this.instances?.air_controller.Destroy();
+		this.instances?.ground_sensor.Destroy();
+		commands.remove(entity, RigidBody);
+	}
+
+	public create_instances(entity: Entity, commands: Commands) {
+		const controller_manager = new Instance("ControllerManager");
+		controller_manager.Name = `${this.definition.root_part.Name}_ControllerManager`;
+		controller_manager.Parent = this.definition.root_part;
+
+		const ground_controller = new Instance("GroundController");
+		ground_controller.Name = `${this.definition.root_part.Name}_GroundController`;
+		ground_controller.Parent = controller_manager;
+
+		const air_controller = new Instance("AirController");
+		air_controller.Name = `${this.definition.root_part.Name}_AirController`;
+		air_controller.Parent = controller_manager;
+
+		const ground_sensor = new Instance("ControllerPartSensor");
+		ground_sensor.Name = `${this.definition.root_part.Name}_GroundSensor`;
+		ground_sensor.Parent = controller_manager;
+
+		controller_manager.GroundSensor = ground_sensor;
+		ground_sensor.UpdateType = Enum.SensorUpdateType.OnRead;
+		ground_sensor.SensorMode = Enum.SensorMode.Floor;
+
+		commands.set(entity, RigidBody, this);
+	}
+
+	public is_grounded() {
+		const sensed_part = this.instances?.ground_sensor.SensedPart;
+		return sensed_part === undefined;
+	}
+
+	public ground_sensor_data() {
+		const sensor = this.instances?.ground_sensor;
+		if (sensor === undefined) return;
+		return {
+			hit_normal: sensor.HitNormal,
+			hit_frame: sensor.HitFrame,
+			sensed_part: sensor.SensedPart,
+		};
+	}
+
+	public set_walk_speed(speed: number, entity: Entity, commands: Commands) {
+		const mananger = this.instances?.controller_manager;
+		if (mananger === undefined) return;
+		mananger.BaseMoveSpeed = speed;
+		commands.set(entity, RigidBody, this);
+	}
 }
-
-@component
-export class PhysicsInput {
-	constructor(
-		public facingDirection = DEFAULT_FACING,
-		public moveDirection = ZERO_VECTOR,
-	) {}
-}
-
-@component
-export class PhysicsBody {
-	constructor(public rootPart: BasePart) {}
-}
-
-@component
-export class AirStrafeIntent {
-	constructor(
-		public direction = ZERO_VECTOR,
-		public strength = 1,
-	) {}
-}
-
-@component
-export class Grounded {}
-
-@component
-export class Airborne {}

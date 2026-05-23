@@ -1,0 +1,5 @@
+packages:
+  - .
+  - ../rovy/packages/core
+  - ../rovy/packages/ui
+  - ../rovy/packages/transformer

@@ -27,10 +27,10 @@ type RunnerOptions = {
 
 local function run(options: RunnerOptions?)
 	local opts = options or {}
-	local runtimeModule = opts.runtimeModule or "./runtime"
+	local runtimeModule = opts.runtimeModule or "./harness/runtime"
 	local loadPath = opts.loadPath or "out/init"
 	local specsDir = opts.specsDir or "test/specs"
-	local specsRequirePrefix = opts.specsRequirePrefix or "../specs/"
+	local specsRequirePrefix = opts.specsRequirePrefix or "./specs/"
 	local successMessage = opts.successMessage or ("ok  harness loaded " .. loadPath)
 	local specHeaderFormat = opts.specHeaderFormat or "── %s ──"
 

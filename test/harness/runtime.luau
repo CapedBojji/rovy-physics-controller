@@ -35,6 +35,21 @@ local ROOT = (process.cwd() :: string):gsub("[/\\]+$", "")
 
 local TS = {}
 local moduleCache: { [string]: { value: any } } = {}
+local heartbeat = {
+	Wait = function()
+		return nil
+	end,
+}
+local gameServices = {
+	RunService = {
+		Heartbeat = heartbeat,
+	},
+}
+local gameShim = {
+	GetService = function(_self, name: string)
+		return gameServices[name]
+	end,
+}
 
 local Node = {}
 
@@ -54,11 +69,7 @@ local function scan(path: string): any
 	for _, entry in readDir(path) do
 		local childPath = path .. "/" .. entry
 		if isDir(childPath) then
-			local child = scan(childPath)
-			node.children[entry] = child
-			if entry == "include" and node.children["rbxts_include"] == nil then
-				node.children["rbxts_include"] = child
-			end
+			node.children[entry] = scan(childPath)
 		elseif isFile(childPath) then
 			local child = node.children[entry] or newNode(childPath)
 			child.__file = childPath
@@ -70,6 +81,9 @@ local function scan(path: string): any
 				node.children[stem] = sn
 			end
 		end
+	end
+	if path == ROOT .. "/include" and node.children["node_modules"] == nil and isDir(ROOT .. "/node_modules") then
+		node.children["node_modules"] = scan(ROOT .. "/node_modules")
 	end
 	local init = node.children["init"]
 	if init and init.__file then
@@ -88,12 +102,10 @@ Node.__index = function(self, key: string)
 		return kids[key]
 	end
 	if key == "Name" then
-		local path = rawget(self, "__path") :: string
-		return path:match("([^/\\]+)$")
+		return (rawget(self, "__path") :: string):match("([^/\\]+)$")
 	end
 	if key == "ClassName" then
-		local file = rawget(self, "__file")
-		return if file ~= nil then "ModuleScript" else "Folder"
+		return rawget(self, "__file") and "ModuleScript" or "Folder"
 	end
 	if key == "Parent" then
 		local p = (rawget(self, "__path") :: string):match("^(.*)[/\\][^/\\]+$")
@@ -108,14 +120,6 @@ end
 
 function Node.WaitForChild(self, name: string)
 	return rawget(self, "children")[name]
-end
-
-function Node.GetFullName(self)
-	return (rawget(self, "__path") :: string):gsub("^" .. ROOT .. "[/\\]?", ""):gsub("[/\\]", ".")
-end
-
-function Node.FindFirstAncestorWhichIsA(_self, _className: string)
-	return nil
 end
 
 local nodeByPath: { [string]: any } = {}
@@ -139,74 +143,11 @@ local function ensureRoot(absPath: string)
 	return roots[absPath]
 end
 
-local rootNode = ensureRoot(ROOT)
-local outNode = ensureRoot(ROOT .. "/out")
-local localRovyPackagesNode = ensureRoot(ROOT .. "/../rovy/packages")
+ensureRoot(ROOT)
 
-if rootNode.children["node_modules"] == nil then
-	rootNode.children["node_modules"] = newNode(ROOT .. "/node_modules")
-end
-
-local nodeModulesNode = rootNode.children["node_modules"]
-if nodeModulesNode.children["@rovy"] == nil then
-	nodeModulesNode.children["@rovy"] = newNode(ROOT .. "/node_modules/@rovy")
-end
-
-local rovyScopeNode = nodeModulesNode.children["@rovy"]
-if localRovyPackagesNode.children["core"] ~= nil then
-	rovyScopeNode.children["core"] = localRovyPackagesNode.children["core"]
-end
-
-local includeNode = rootNode.children["rbxts_include"]
-if includeNode ~= nil and includeNode.children["node_modules"] == nil and rootNode.children["node_modules"] ~= nil then
-	includeNode.children["node_modules"] = rootNode.children["node_modules"]
-end
-if rootNode.children["rbxts_include"] ~= nil and outNode.children["rbxts_include"] == nil then
-	outNode.children["rbxts_include"] = rootNode.children["rbxts_include"]
-end
-
-local sharedG = setmetatable({}, { __index = _G })
-
-local function makeVector3(x: number, y: number, z: number)
-	local magnitude = math.sqrt(x * x + y * y + z * z)
-	local vector = {
-		X = x,
-		Y = y,
-		Z = z,
-		Magnitude = magnitude,
-	}
-
-	function vector.div(self, scalar: number)
-		return makeVector3(self.X / scalar, self.Y / scalar, self.Z / scalar)
-	end
-
-	function vector.mul(self, scalar: number)
-		return makeVector3(self.X * scalar, self.Y * scalar, self.Z * scalar)
-	end
-
-	return vector
-end
-
-rawset(sharedG, "Vector3", {
-	new = makeVector3,
-	zero = makeVector3(0, 0, 0),
-	yAxis = makeVector3(0, 1, 0),
-})
-
-rawset(sharedG, "game", {
-	GetService = function(_, serviceName)
-		if serviceName == "RunService" then
-			return {
-				Heartbeat = {
-					Wait = function()
-						return 0
-					end,
-				},
-			}
-		end
-		return {}
-	end,
-})
+local sharedG = setmetatable({
+	game = gameShim,
+}, { __index = _G })
 
 local function loadModule(node): any
 	local fsPath = rawget(node, "__file")
@@ -229,7 +170,6 @@ local function loadModule(node): any
 	local env = setmetatable({
 		script = scriptNode,
 		_G = sharedG,
-		game = rawget(sharedG, "game"),
 		task = task,
 		require = function(target)
 			if type(target) == "string" then

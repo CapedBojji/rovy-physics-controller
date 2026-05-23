@@ -1,21 +1,21 @@
 {
-  "name": "physics-controller",
-  "tree": {
-    "$className": "Folder",
-    "rbxts_include": {
-      "$path": "include",
-      "node_modules": {
-        "$className": "Folder",
-        "@rbxts": {
-          "$path": "node_modules/@rbxts"
-        },
-        "@rovy": {
-          "$path": "node_modules/@rovy"
-        }
-      }
-    },
-    "out": {
-      "$path": "out"
-    }
-  }
+	"name": "physics-controller",
+	"tree": {
+		"$className": "Folder",
+		"include": {
+			"$path": "include",
+			"node_modules": {
+				"$className": "Folder",
+				"@rbxts": {
+					"$path": "node_modules/@rbxts"
+				},
+				"@rovy": {
+					"$path": "node_modules/@rovy"
+				}
+			}
+		},
+		"out": {
+			"$path": "out"
+		}
+	}
 }

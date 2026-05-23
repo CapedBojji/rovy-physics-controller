@@ -2,5 +2,6 @@ node_modules
 out
 include
 build
+sourcemap.json
 *.tsbuildinfo
 .DS_Store
