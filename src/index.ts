@@ -1,11 +1,13 @@
-import type { App } from "@rovy/core";
-import { createPhysicsControllerPlugin } from "./runtime/plugin";
+import { type App, type Plugin, plugin } from "@rovy/core";
 
 export { App, rovy } from "@rovy/core";
-export * from "./state";
 
-import "./systems";
-
-export function configurePhysicsController(app: App): App {
-	return app.addPlugin(createPhysicsControllerPlugin());
+@plugin
+export class PhysicsControllerPlugin implements Plugin {
+	build(_app: App): void {
+		require(script.WaitForChild("state") as ModuleScript);
+		require(script.WaitForChild("components") as ModuleScript);
+		require((script.WaitForChild("systems") as Folder).WaitForChild("setup-rigid-body") as ModuleScript);
+		require((script.WaitForChild("systems") as Folder).WaitForChild("process-physics-inputs") as ModuleScript);
+	}
 }

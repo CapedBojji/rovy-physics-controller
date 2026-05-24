@@ -43,12 +43,25 @@ local heartbeat = {
 local gameServices = {
 	RunService = {
 		Heartbeat = heartbeat,
+		IsRunning = function()
+			return false
+		end,
+		IsClient = function()
+			return false
+		end,
+		IsStudio = function()
+			return false
+		end,
 	},
 }
 local gameShim = {
 	GetService = function(_self, name: string)
 		return gameServices[name]
 	end,
+	IsLoaded = function()
+		return true
+	end,
+	Loaded = heartbeat,
 }
 
 local Node = {}
@@ -122,6 +135,10 @@ function Node.WaitForChild(self, name: string)
 	return rawget(self, "children")[name]
 end
 
+function Node.GetFullName(self)
+	return rawget(self, "__path")
+end
+
 local nodeByPath: { [string]: any } = {}
 local function indexTree(node)
 	nodeByPath[node.__path] = node
@@ -149,6 +166,36 @@ local sharedG = setmetatable({
 	game = gameShim,
 }, { __index = _G })
 
+local function resolveModuleNode(node)
+	if node == nil or rawget(node, "__file") ~= nil then
+		return node
+	end
+
+	local outNode = node.children["out"]
+	if outNode ~= nil then
+		return outNode
+	end
+
+	local initNode = node.children["init"]
+	if initNode ~= nil then
+		return initNode
+	end
+
+	local srcNode = node.children["src"]
+	if srcNode ~= nil then
+		local srcInitNode = srcNode.children["init"]
+		if srcInitNode ~= nil then
+			return srcInitNode
+		end
+		local namedNode = srcNode.children[node.Name]
+		if namedNode ~= nil then
+			return namedNode
+		end
+	end
+
+	return node
+end
+
 local function loadModule(node): any
 	local fsPath = rawget(node, "__file")
 	assert(fsPath, "physics-controller test harness: not a requirable module: " .. tostring(rawget(node, "__path")))
@@ -165,7 +212,6 @@ local function loadModule(node): any
 		local dir = fsPath:match("^(.*)[/\\]init%.lua[u]?$")
 		scriptNode = (dir and treeIndex(dir)) or node
 	end
-	rawset(sharedG, scriptNode, TS)
 
 	local env = setmetatable({
 		script = scriptNode,
@@ -195,17 +241,27 @@ local function loadModule(node): any
 
 	local chunk = luau.load(luau.compile(src), { chunk_name = fsPath, env = env })
 	local value = chunk()
+	if fsPath:match("[/\\]include[/\\]RuntimeLib%.lua$") and type(value) == "table" then
+		local originalGetModule = value.getModule
+		local originalImport = value.import
+		value.getModule = function(context, scope, moduleName)
+			return resolveModuleNode(originalGetModule(context, scope, moduleName))
+		end
+		value.import = function(context, module, ...)
+			local target = module
+			for i = 1, select("#", ...) do
+				target = target:WaitForChild((select(i, ...)))
+			end
+			return originalImport(context, resolveModuleNode(target))
+		end
+	end
 	moduleCache[fsPath] = { value = value }
 	return value
 end
 
 function TS.getModule(_context, scope: string, moduleName: string)
 	local dir = ROOT .. "/node_modules/" .. scope .. "/" .. moduleName
-	local node = ensureRoot(dir)
-	if rawget(node, "__file") == nil and node.children["out"] ~= nil then
-		return node.children["out"]
-	end
-	return node
+	return resolveModuleNode(ensureRoot(dir))
 end
 
 function TS.import(_context, module, ...)

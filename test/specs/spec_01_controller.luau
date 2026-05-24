@@ -3,20 +3,20 @@
 
 return function(TS, t)
 	local lib = TS.loadPath("out/init")
-	local pluginLib = TS.loadPath("out/runtime/plugin")
+	local state = TS.loadPath("out/state")
 
 	t.describe("PhysicsControllerPlugin", function()
 		t.it("can be created", function()
-			local plugin = pluginLib.createPhysicsControllerPlugin()
+			local plugin = lib.PhysicsControllerPlugin.new()
 			t.expect(plugin).toBeDefined()
 		end)
 
 		t.it("installs into an app through the helper", function()
 			local app = lib.App.new()
 			local ok, err = pcall(function()
-				lib.configurePhysicsController(app)
+				app:addPlugin(lib.PhysicsControllerPlugin.new())
 				app:start()
-				app:runSchedule(lib.Update)
+				app:runSchedule(state.Update)
 			end)
 
 			t.expect(ok).toBe(true)

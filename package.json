@@ -20,12 +20,14 @@
 	},
 	"dependencies": {
 		"@rovy/core": "workspace:*",
+		"@rovy/jecs": "workspace:*",
+		"@rovy/networking": "workspace:*",
 		"@rovy/ui": "workspace:*",
+		"@rovy/world-inspector": "workspace:*",
 		"typescript": "5.5.3"
 	},
 	"devDependencies": {
 		"@rbxts/compiler-types": "3.0.0-types.0",
-		"@rbxts/jecs": "^0.11.0",
 		"@rbxts/types": "^1.0.920",
 		"roblox-ts": "^3.0.0",
 		"rovy-transformer": "workspace:*"
