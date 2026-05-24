@@ -10,6 +10,33 @@ local function characterRoot(character)
 	return nil
 end
 
+local function cameraPlanarBasis()
+	local camera = game:GetService("Workspace").CurrentCamera
+	local forward = if camera ~= nil then Vector3.new(camera.CFrame.LookVector.X, 0, camera.CFrame.LookVector.Z) else Vector3.zAxis
+	forward = if forward.Magnitude > 0 then forward.Unit else Vector3.zAxis
+	local right = Vector3.new(forward.Z, 0, -forward.X)
+	return forward, right
+end
+
+local function readMoveDirection(inputState)
+	local forward, right = cameraPlanarBasis()
+	local move = Vector3.zero
+	if inputState.forward_held then
+		move += forward
+	end
+	if inputState.backward_held then
+		move -= forward
+	end
+	if inputState.right_held then
+		move += right
+	end
+	if inputState.left_held then
+		move -= right
+	end
+	move = if move.Magnitude > 1 then move.Unit else move
+	return if move.Magnitude > 0 then move.Unit else forward, move
+end
+
 local function cubesFolder()
 	local Workspace = game:GetService("Workspace")
 	local folder = Workspace:FindFirstChild(CUBE_FOLDER_NAME)
@@ -64,8 +91,10 @@ local function spawnCube(player)
 end
 
 return {
+	cameraPlanarBasis = cameraPlanarBasis,
 	characterRoot = characterRoot,
 	cleanupCube = cleanupCube,
 	cubesFolder = cubesFolder,
+	readMoveDirection = readMoveDirection,
 	spawnCube = spawnCube,
 }

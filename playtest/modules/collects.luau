@@ -4,24 +4,12 @@ local core = TS.import(script, ReplicatedStorage, "include", "node_modules", "@r
 
 local Collector = core.Collector
 
-local function cameraPlanarBasis()
-	local camera = game:GetService("Workspace").CurrentCamera
-	local forward = if camera ~= nil then Vector3.new(camera.CFrame.LookVector.X, 0, camera.CFrame.LookVector.Z) else Vector3.zAxis
-	forward = if forward.Magnitude > 0 then forward.Unit else Vector3.zAxis
-	local right = Vector3.new(forward.Z, 0, -forward.X)
-	return forward, right
-end
-
 local LocalPlaytestCollect = setmetatable({}, { __index = Collector })
 LocalPlaytestCollect.__index = LocalPlaytestCollect
 
 function LocalPlaytestCollect.new()
 	local self = setmetatable({}, LocalPlaytestCollect)
 	Collector.constructor(self)
-	self.forward_held = false
-	self.backward_held = false
-	self.left_held = false
-	self.right_held = false
 
 	local Players = game:GetService("Players")
 	local UserInputService = game:GetService("UserInputService")
@@ -47,49 +35,31 @@ function LocalPlaytestCollect.new()
 		end
 		if input.KeyCode == Enum.KeyCode.F2 then
 			self:enqueue({ kind = "toggleInspector" })
-			return
 		end
-		self:setKey(input.KeyCode, true)
-	end)
-	UserInputService.InputEnded:Connect(function(input)
-		self:setKey(input.KeyCode, false)
 	end)
 
 	return self
 end
 
-function LocalPlaytestCollect:readMoveDirection()
-	local forward, right = cameraPlanarBasis()
-	local move = Vector3.zero
-	if self.forward_held then
-		move += forward
-	end
-	if self.backward_held then
-		move -= forward
-	end
-	if self.right_held then
-		move += right
-	end
-	if self.left_held then
-		move -= right
-	end
-	move = if move.Magnitude > 1 then move.Unit else move
-	return if move.Magnitude > 0 then move.Unit else forward, move
-end
+local PlaytestInputCollect = setmetatable({}, { __index = Collector })
+PlaytestInputCollect.__index = PlaytestInputCollect
 
-function LocalPlaytestCollect:setKey(key, held)
-	if key == Enum.KeyCode.W then
-		self.forward_held = held
-	end
-	if key == Enum.KeyCode.S then
-		self.backward_held = held
-	end
-	if key == Enum.KeyCode.A then
-		self.left_held = held
-	end
-	if key == Enum.KeyCode.D then
-		self.right_held = held
-	end
+function PlaytestInputCollect.new()
+	local self = setmetatable({}, PlaytestInputCollect)
+	Collector.constructor(self)
+
+	local UserInputService = game:GetService("UserInputService")
+	UserInputService.InputBegan:Connect(function(input, processed)
+		if processed then
+			return
+		end
+		self:enqueue({ kind = "keyChanged", key = input.KeyCode, held = true })
+	end)
+	UserInputService.InputEnded:Connect(function(input)
+		self:enqueue({ kind = "keyChanged", key = input.KeyCode, held = false })
+	end)
+
+	return self
 end
 
 local ServerPlayerLifecycleCollect = setmetatable({}, { __index = Collector })
@@ -115,6 +85,7 @@ end
 
 local function registerClient(rovy, plugin)
 	rovy:__collect(LocalPlaytestCollect, "playtest/collects@LocalPlaytestCollect", { plugin = plugin })
+	rovy:__collect(PlaytestInputCollect, "playtest/collects@PlaytestInputCollect", { plugin = plugin })
 end
 
 local function registerServer(rovy, plugin)
@@ -123,6 +94,7 @@ end
 
 return {
 	LocalPlaytestCollect = LocalPlaytestCollect,
+	PlaytestInputCollect = PlaytestInputCollect,
 	ServerPlayerLifecycleCollect = ServerPlayerLifecycleCollect,
 	registerClient = registerClient,
 	registerServer = registerServer,

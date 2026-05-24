@@ -2,7 +2,12 @@ local ClientPlaytestState = {}
 ClientPlaytestState.__index = ClientPlaytestState
 
 function ClientPlaytestState.new()
-	return setmetatable({}, ClientPlaytestState)
+	return setmetatable({
+		forward_held = false,
+		backward_held = false,
+		left_held = false,
+		right_held = false,
+	}, ClientPlaytestState)
 end
 
 local ServerPlaytestState = {}
