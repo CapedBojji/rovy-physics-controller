@@ -34,11 +34,15 @@ function CollectCharacterPhysicsInput:run(input, world, commands, state)
 		return
 	end
 	local characterEntity = world:getRef(state.character)
-	if characterEntity == nil or not world:has(characterEntity, PhysicsInput) then
+	if characterEntity == nil then
+		return
+	end
+	local physicsInput = world:get(characterEntity, PhysicsInput)
+	if physicsInput == nil then
 		return
 	end
 	local facingDirection, movingDirection = util.readMoveDirection(state)
-	commands:set(characterEntity, PhysicsInput, PhysicsInput.new(facingDirection, movingDirection))
+	physicsInput:update_inputs(commands, characterEntity, facingDirection, movingDirection)
 end
 
 local function register(rovy, plugin)
